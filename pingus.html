@@ -24,30 +24,7 @@
     var ctx = document.getElementById('canvas').getContext('2d');
     var f=1;
     var img = new Image();  
-    var imgEnnemy = new Image();
-    var imgMissile = new Image();    
-    var angel= new Image();
-    var basher= new Image();
-    var blocker= new Image();
-    var boarder= new Image();
-    var bomber= new Image();
-    var bridger= new Image();
-    var bridger_walk= new Image();
-    var climber= new Image();
-    var digger= new Image();
-    var drownfall= new Image();
-    var drownwalk= new Image();
-    var exit= new Image();
-    var explo= new Image();
     var faller= new Image();
-    var floater= new Image();
-    var miner= new Image();
-    var rocketlauncher= new Image();
-    var slider= new Image();
-    var splat= new Image();
-    var superman= new Image();
-    var tumble= new Image();
-    var waiter= new Image();
     var walker= new Image();
     var doorImg = new Image();
 
@@ -74,13 +51,23 @@
       this.direction = 0;
       this.oldDirection = 0;
       this.x=x;
-      this.y=y;
+      this.y=y - 128;
       this.energy = 100;
       this.speed = 0;
       this.reqFrame=0;
       //============ move() =================
       this.move = function(){	
-	ctx.drawImage(walker,(64) + 32 * ((this.reqFrame) % 6) , 0 , 32, 32, this.x, this.y, 32, 32);
+	switch (this.direction){
+	  case 0:
+	    ctx.drawImage(walker,(64) + 32 * ((this.reqFrame) % 6) , 32, 32, 32, this.x, this.y, 32, 32);
+	  break;
+	  case 1:
+	    ctx.drawImage(walker,(64) + 32 * ((this.reqFrame) % 6) , 0 , 32, 32, this.x, this.y, 32, 32);
+	  break;
+	  default:
+	    ctx.drawImage(faller,(64) + 32 * ((this.reqFrame) % 6) , 0 , 32, 32, this.x, this.y, 32, 32);
+	  break;
+	}
 	// Get image data
 	var imageData = ctx.getImageData(this.x + (Math.abs(this.direction)) * 32, this.y + 32, 5, 1);
 	if ((imageData.data[0] != 1 && imageData.data[1] !=  1 && imageData.data[2] !=  1 ) && this.y < canvas.height-32 && this.direction != -1){
@@ -102,7 +89,7 @@
 	}
 	if (this.direction < 0){
 	  this.y += 0.0+this.speed;
-	  this.speed+=0.2;
+	  this.speed+=0.02;
 	}
 	else if (this.direction == 0){
 	 this.x += 1;
@@ -204,23 +191,7 @@
       for (i=0;i<lemmings.length;i++){
 	if (f%5==0)
 	  lemmings[i].reqFrame+=1;
-	if (lemmings[i].direction > 0){
-	  lemmings[i].move();
-	}
-	else if (lemmings[i].direction == 0){
-	  lemmings[i].move();
-	}
-	else if (lemmings[i].speed < 3){
-		if (lemmings[i].oldDirection > 0){
-		  lemmings[i].move();
-		}
-		else if (lemmings[i].oldDirection == 0){
-		  lemmings[i].move();
-		}	
-	}
-	else{
-		  lemmings[i].move();
-	}
+	lemmings[i].move();
       }
       for (var i = 0 ; i < lemmings.length ; i++){
 	if (lemmings[i].x < cursor.x && lemmings[i].x + 32 > cursor.x 
@@ -255,28 +226,7 @@
       ctx.canvas.width  = window.innerWidth;
       ctx.canvas.height  = window.innerHeight;
       doorImg.src = 'src/th_SuperMario64Door.jpg';
-      angel.src = "src/angel.png"
-      basher.src = "src/basher.png"
-      blocker.src = "src/blocker.png"
-      boarder.src = "src/boarder.png"
-      bomber.src = "src/bomber.png"
-      bridger.src = "src/bridger.png"
-      bridger_walk.src = "src/bridger_walk.png"
-      climber.src = "src/climber.png"
-      digger.src = "src/digger.png"
-      drownfall.src = "src/drownfall.png"
-      drownwalk.src = "src/drownwalk.png"
-      exit.src = "src/exit.png"
-      explo.src = "src/explo.png"
       faller.src = "src/faller.png"
-      floater.src = "src/floater.png"
-      miner.src = "src/miner.png"
-      rocketlauncher.src = "src/rocketlauncher.png"
-      slider.src = "src/slider.png"
-      splat.src = "src/splat.png"
-      superman.src = "src/superman.png"
-      tumble.src = "src/tumble.png"
-      waiter.src = "src/waiter.png"
       walker.src = "src/walker.png"
     }
     init();
