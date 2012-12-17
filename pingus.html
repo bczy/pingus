@@ -1,37 +1,43 @@
 <html>
   <head>
-    <title>Defend</title>
-    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-    <meta charset="utf-8">
-    <style type="text/css">body{background-color: #FFF;margin: 0px;overflow: hidden; }</style>
-  <link href='http://fonts.googleapis.com/css?family=VT323' rel='stylesheet' type='text/css'>
-    <script type="text/javascript" language="JavaScript">
-      var _gaq = _gaq || [];
-      _gaq.push(['_setAccount', 'UA-8977675-12']);
-      _gaq.push(['_trackPageview']);
-      (function() {
-	var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-	ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-	var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-      })();
-    </script>
+    <title>Pingus</title>
+    <style type="text/css">body{ margin: 0px; padding: 0px; }</style>
   </head>
-  <body style='background:#333'  onkeydown='keyIsDown(event)' onkeyup='keyIsUp(event)'  >
-    <div id="canvasContainer" style="width:100%;">
-      <canvas id="canvas"></canvas>
-    </div>
+  <body onkeydown='keyIsDown(event)' onkeyup='keyIsUp(event)'>
+  <canvas id="canvas"></canvas>
   <script>
     var ctx = document.getElementById('canvas').getContext('2d');
     var f=1;
     var img = new Image();  
-    var faller= new Image();
+    var imgSnowBlock = new Image();
     var walker= new Image();
+    var faller= new Image();
+    var floater = new Image();
+    var splat = new Image();
     var doorImg = new Image();
+    var slider = new Image();
+    var basher = new Image();
+    var blocker = new Image();
+    var boarder = new Image();
+    var bomber = new Image();
+    var bridger = new Image();
+    var bridger_walk = new Image();
+    var climber = new Image();
+    var digger = new Image();
+    var drownfall = new Image();
+    var drownwalk = new Image();
+    var exit = new Image();
+    var miner = new Image();
+    var slider = new Image();
+    var superman = new Image();
+    var tumble = new Image();
+    var waiter = new Image();
 
-    /*** LISTS ***/
+    var selectedCapacity = "floater";
+   /*** LISTS ***/
     var lemmings = new Array();
-    var elements = new Array();
     /*** MAIN STRUCTURES (mouse, kb & main character) ***/
+    var keyBoard = {};
     var cursor = {
       x : 0,
       y : 0,
@@ -40,92 +46,91 @@
       buttonLeft : 0,
       buttonRight : 0
     }
-    var keyBoard = {
-    }
-   
-    var door = {x:300,y:270 }
-   
     /*** MAIN OBJECTS (Ennemies, explosions & missiles) ***/
     /*************** Lemming ! ****************/
     function Lemming(x,y){
-      this.direction = 0;
-      this.oldDirection = 0;
-      this.x=x;
-      this.y=y - 128;
-      this.energy = 100;
+      this.direction = -1;
+      this.previousDirection = 0;
+      this.state = 0;
+      this.x = x;
+      this.y = y - 12;
       this.speed = 0;
-      this.reqFrame=0;
-      //============ move() =================
-      this.move = function(){	
-	switch (this.direction){
-	  case 0:
-	    ctx.drawImage(walker,(64) + 32 * ((this.reqFrame) % 6) , 32, 32, 32, this.x, this.y, 32, 32);
-	  break;
-	  case 1:
-	    ctx.drawImage(walker,(64) + 32 * ((this.reqFrame) % 6) , 0 , 32, 32, this.x, this.y, 32, 32);
-	  break;
-	  default:
-	    ctx.drawImage(faller,(64) + 32 * ((this.reqFrame) % 6) , 0 , 32, 32, this.x, this.y, 32, 32);
-	  break;
-	}
-	// Get image data
-	var imageData = ctx.getImageData(this.x + (Math.abs(this.direction)) * 32, this.y + 32, 5, 1);
-	if ((imageData.data[0] != 1 && imageData.data[1] !=  1 && imageData.data[2] !=  1 ) && this.y < canvas.height-32 && this.direction != -1){
-	  this.oldDirection = this.direction;
-	  console.log(this.direction);
-	  this.direction = -1;
-	}
-	else if (this.direction < 0 && imageData.data[0] == 1 && imageData.data[1] ==  1 && imageData.data[2] ==  1){
-	  this.direction = this.oldDirection;
-	  console.log(this.direction);
-	}
-	else{
-	  imageData = ctx.getImageData(this.x+(Math.abs(this.direction))*27, this.y+31, 5, 1);
-	  if ((imageData.data[0] == 1 && imageData.data[1] ==  1 && imageData.data[2] ==  1 ) ){
-	    if ((imageData.data[0] == 1 && imageData.data[1] ==  1 && imageData.data[2] ==  1 ) ){
-	      this.y-=1;
+      this.frame = 0;
+      this.job = [];
+      this.capacities = { build : 2 , floater: 2};
+	//============ walk or fall function =================
+      this.walkOrFall = function(){	
+	// Floor collision detection
+	var imageData = ctx.getImageData(this.x + 15, this.y + 32 + ~~(this.speed), 1, 1).data;
+	//are we falling?
+	if (this.direction == -1){
+	  if (imageData[0] != 255 && imageData[1] != 255 && imageData[2] != 255 && imageData[2] > 200){
+	    //Lemming hits the floor and continues its walk
+	    var canFloat = false;
+	    for (var j = 0 ; j < this.job.length ; j++){
+	      if (this.job[j] == "floater"){
+		canFloat = true;
+		break;  
+	      }
 	    }
+	    if (this.speed > 2.8 && !canFloat)
+	      this.state = -1;
+	    this.direction = this.previousDirection;
 	  }
-	}
-	if (this.direction < 0){
-	  this.y += 0.0+this.speed;
+	  // Coordinates update
+	  this.y += 0.0 + this.speed;
 	  this.speed+=0.02;
 	}
+	//
+	else if (imageData[0] == 255 || imageData[1] == 255 || imageData[2] == 255){
+	  this.previousDirection = this.direction;  
+	  this.direction = -1;
+	}
 	else if (this.direction == 0){
-	 this.x += 1;
+	 this.x += 3;
 	 this.speed=0;
-	 if (Math.floor(this.x) > canvas.width-40){
-	    this.direction=1
-	    console.log(this.direction);
+	 if (this.x > canvas.width-32){
+	    this.direction = 1;
 	  }
 	}
 	else{
-	  this.x -= 1;
-	 this.speed=0;
-	  if (this.x < 0){
+	 this.x -= 3;
+	 this.speed = 0;
+	  if (this.x < 0)
 	    this.direction=0;
-	    console.log(this.direction);
+	}
+	if (this.state != -1){
+	  switch (this.direction){
+	    // Rendering...
+	    case 1: //right direction
+	      ctx.drawImage(walker,(64) + 32 * ((this.frame) % 6) , 0 , 32, 32, this.x, this.y + 1, 32, 32);
+	    break;
+	    case 0: //left direction
+	      ctx.drawImage(walker,(64) + 32 * ((this.frame) % 6) , 32, 32, 32, this.x, this.y + 1, 32, 32);
+	    break;
+	    default: //falling ( = -1 )
+	      var floating = false;
+	      if (this.speed > 2){
+		for (var i = 0 ; i < this.job.length ; i++){
+		  if (this.job[i] == "floater"){
+		    floating = true;
+		    ctx.drawImage(floater,(64) + 32 * ((this.frame) % 6) , 0 , 32, 32, this.x, this.y + 1, 32, 32);
+		    break;
+		  }
+		}
+	      }
+	      if (!floating)
+		ctx.drawImage(faller,(64) + 32 * ((this.frame) % 6) , 0 , 32, 32, this.x, this.y + 1, 32, 32);
+	    break;
 	  }
 	}
-      }
-    }
-    function Element(x,y){
-      this.x=x;
-      this.y=y;
-    }
-
-    /**** MUF ****/
-    function addElement(x,y){		
-      var found = false;
-      for (var i = 0 ; i < elements.length ; i++){
-	if (elements[i].x == x && elements[i].y == y){
-	  found = true;
-	  break;
+	else{
+	  ctx.drawImage(splat,(64) + 32 * ((this.frame) % 6) , 0 , 32, 32, this.x, this.y + 1, 32, 32);	
 	}
       }
-      if (!found)
-	elements.push(new Element(x,y));
     }
+    var door = { x: 300, y: 270 }
+   
     /*** MOUSE CONTROL ***/
     canvas.onmousemove = function(e)
     {
@@ -139,9 +144,7 @@
       else if(e.layerX) {
 	cursor.x = e.layerX;
 	cursor.y = e.layerY;
-      }
-      if (cursor.buttonLeft || cursor.buttonRight)
-	addElement(cursor.x,cursor.y);	
+      }	
     }
     canvas.onmousedown = function(e)
     {
@@ -155,7 +158,7 @@
       if (e.button == 0)
 	cursor.buttonLeft=0;
       else if (e.button == 1)
-	cursor.buttonRight=0;
+	cursor.buttonRight=0; 
     }
     /*** KEYBOARD CONTROL ***/
     function keyIsDown(event)
@@ -167,39 +170,100 @@
     function input()
     {
     } 
-    /*** utility function ***/
-    Array.prototype.remove = function(from, to) {
+    /*** utility function TODO: too old is too old, remove!***/
+    Array.prototype.move = function(from, to) {
       var rest = this.slice((to || from) + 1 || this.length);
       this.length = from < 0 ? this.length + from : from;
       return this.push.apply(this, rest);
     };
-    /**** HERE ARE THE MAIN RENDER FUNCTIONS => DURING GAME & GAMEOVER, TODO: welcome page ***/
+    /**** HERE ARE THE MAIN FUNCTIONS ***/
     function update(){
       //let's clear this
       ctx.fillStyle = 'rgb(255,255,255)';
       ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(slider,0, 0, 32,32, canvas.width - 32, 0, 32, 32);
+      ctx.drawImage(basher, 0, 0, 32,32, canvas.width - 32 * 2, 0, 32, 32);
+      ctx.drawImage(blocker, 0, 0, 32,32, canvas.width - 32 * 3, 0, 32, 32);
+      ctx.drawImage(miner, 0, 0, 32,32, canvas.width - 32 * 4, 0, 32, 32);
+      ctx.drawImage(bomber, 0, 0, 32,32, canvas.width - 32 * 5, 0, 32, 32);
+      ctx.drawImage(bridger, 0, 0, 32,32, canvas.width - 32 * 6, 0, 32, 32);
+      ctx.drawImage(bridger_walk, 0, 0, 32,32, canvas.width - 32 * 7, 0, 32, 32);
+      ctx.drawImage(climber, 0, 0, 32,32, canvas.width - 32 * 8, 0, 32, 32);
+      ctx.drawImage(digger, 0, 0, 32,32, canvas.width - 32 * 9, 0, 32, 32);
+      ctx.drawImage(floater, 0, 0, 32, 32, canvas.width - 32 * 10, 0, 32, 32);
+      ctx.drawImage(superman, 0, 0, 32, 32, canvas.width - 32 * 11, 0, 32, 32);
+
       ctx.fillStyle = 'rgb(1,1,1)';
-      ctx.fillRect(0,100,600,10);
-      ctx.fillRect(200,200,canvas.width-200,10);
-      ctx.fillRect(100,400,700,10);
-      ctx.fillRect(200,500,600,10);
-      ctx.fillRect(0,700,800,10);
+      for (var i = 0 ; i < 32 ; i++){
+	ctx.drawImage(imgSnowBlock, 23 * i, 100);
+      }
+      for (var i = 0 ; 200 + i * 23 < canvas.width ; i++){
+	ctx.drawImage(imgSnowBlock,200 + 23 * i, 200);
+      }
+      for (var i = 0 ; i  < 600 ; i += 23){
+	ctx.drawImage(imgSnowBlock, i, 400);
+      }
       ctx.drawImage(doorImg,door.x,door.y);
-      for (var i = 0 ; i < elements.length ; i++){
-	ctx.fillRect(elements[i].x,elements[i].y,10,2);
-      }
-      for (i=0;i<lemmings.length;i++){
-	if (f%5==0)
-	  lemmings[i].reqFrame+=1;
-	lemmings[i].move();
-      }
+      
+      // Now let's loop on the lemming list
       for (var i = 0 ; i < lemmings.length ; i++){
-	if (lemmings[i].x < cursor.x && lemmings[i].x + 32 > cursor.x 
-	    && lemmings[i].y < cursor.y && lemmings[i].y + 32 > cursor.y)
-	console.log("found:"+i);
+	var lemming = lemmings[i];
+	//is he in front of the door???
+	if (lemming.x > 350 && lemming.x < 390 && lemming.y > 270 && lemming.y < 380){
+	  console.log("youpee" + lemming.job) ;
+	}
+	//does the cursor is upon the mouse?
+	if (lemming.x < cursor.x && lemming.x + 32 > cursor.x 
+	    && lemming.y < cursor.y && lemming.y + 32 > cursor.y){
+	  ctx.strokeStyle = "rgb(199,0,0)";
+	  ctx.strokeRect(lemming.x, lemming.y,32,32);
+	  ctx.stroke();
+	  if (cursor.buttonLeft){
+		lemming.job.push(selectedCapacity);
+	  }
+	}
+	if (cursor.y < 32 && cursor.x > canvas.width - 32 * 11){
+	  var rest = Math.round((canvas.width - cursor.x) / 32);
+	  switch (rest){
+	  case 1:
+	    selectedCapacity = "digger";
+	  break;
+	  case 2:
+	    selectedCapacity = "blocker";
+	  break;
+	  case 3:
+	    selectedCapacity = "miner";
+	  break;
+	  case 4:
+	    //selectedCapacity = "";
+	  break;
+	  case 5:
+	    selectedCapacity = "bridger";
+	  break;
+	  case 6:
+	    selectedCapacity = "bridger";
+	  break;
+	  case 7:
+	    selectedCapacity = "climber";
+	  break;
+	  case 8:
+	    selectedCapacity = "digger";
+	  break;
+	  case 9:
+	    selectedCapacity = "floater";
+	  break;
+	  }
+	  ctx.strokeStyle = "rgb(199,0,0)";
+	  ctx.strokeRect(canvas.width - rest * 32, 0,32,32);
+	  ctx.stroke();
+	}
+	if ( f % 5 == 0 )
+	  lemming.frame+=1; //animation	
+	lemming.walkOrFall();
       }
+      
       if (f%60==0){
-	if (lemmings.length < 6)
+	if (lemmings.length < 10)
 	  lemmings.push(new Lemming(0,50));
       }
     }
@@ -209,9 +273,8 @@
 	window.webkitRequestAnimationFrame || 
 	window.mozRequestAnimationFrame    || 
 	window.oRequestAnimationFrame      || 
-	window.msRequestAnimationFrame     || 
-	function(callback, element)
-	{
+	window.msRequestAnimationFrame     || 	
+	function(callback, element){
 	  window.setTimeout(callback, 1000 / 60);
 	};
       }
@@ -227,7 +290,27 @@
       ctx.canvas.height  = window.innerHeight;
       doorImg.src = 'src/th_SuperMario64Door.jpg';
       faller.src = "src/faller.png"
+      imgSnowBlock.src = "src/snowBlock.png"
       walker.src = "src/walker.png"
+      splat.src = "src/splat.png";
+      floater.src = "src/floater.png";
+      slider.src = "src/slider.png";
+      basher.src = "src/basher.png";
+      blocker.src = "src/blocker.png";
+      boarder.src = "src/boarder.png";
+      bomber.src = "src/bomber.png";
+      bridger.src = "src/bridger.png";
+      bridger_walk.src = "src/bridger_walk.png";
+      climber.src = "src/climber.png";
+      digger.src = "src/digger.png";
+      drownfall.src = "src/drownfall.png";
+      drownwalk.src = "src/drownwalk.png";
+      exit.src = "src/exit.png";
+      miner.src = "src/miner.png";
+      slider.src = "src/slider.png";
+      superman.src = "src/superman.png";
+      tumble.src = "src/tumble.png";
+      waiter.src = "src/waiter.png";
     }
     init();
     run();
