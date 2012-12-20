@@ -10,6 +10,7 @@
     var f=1;
     var img = new Image();  
     var imgSnowBlock = new Image();
+    var imgWater = new Image();
     var walker= new Image();
     var faller= new Image();
     var floater = new Image();
@@ -35,7 +36,8 @@
 
     var selectedCapacity = "floater";
    /*** LISTS ***/
-    var lemmings = new Array();
+    var lemmings = [];
+    var elements = [];
     /*** MAIN STRUCTURES (mouse, kb & main character) ***/
     var keyBoard = {};
     var cursor = {
@@ -47,6 +49,12 @@
       buttonRight : 0
     }
     /*** MAIN OBJECTS (Ennemies, explosions & missiles) ***/
+    /*************** dig elements ****************/
+    function Element(x,y){
+      this.x=x;
+      this.y=y;
+    }
+
     /*************** Lemming ! ****************/
     function Lemming(x,y){
       this.direction = -1;
@@ -61,45 +69,74 @@
 	//============ walk or fall function =================
       this.walkOrFall = function(){	
 	// Floor collision detection
-	var imageData = ctx.getImageData(this.x + 15, this.y + 32 + ~~(this.speed), 1, 1).data;
+	var imageData = ctx.getImageData(this.x + 15, this.y + 32 + ~~(this.speed), 1, 2).data;
+	var digging = false;
+	for (var i = 0 ; i < this.job.length ; i++){
+	  if (this.job[i] == "digger"){
+	    digging = true;
+	    break;
+	  }
+	}
+// 	if (f % 20 == 0)
+// 	  console.log(this.direction + " " + digging + " " + this.previousDirection);
+	if (digging){
+	  if ((imageData[8] == 255 || imageData[9] == 255 || imageData[10] == 255) && imageData[11] == 255){
+	    digging = false;
+	    //this.previousDirection = this.direction;  
+	    this.direction = -1;
+	    for (var i = 0 ; i < this.job.length ; i++){
+	      if (this.job[i] == "digger"){
+		  this.job.splice(i,1);
+		  i--;
+	      }
+	    }
+	  }
+	  else{
+	    this.y += 1;
+	    ctx.drawImage(digger,(64) + 32 * ((this.frame) % 6) , 0 , 32, 32, this.x, this.y + 1, 32, 32);
+	    elements.push(new Element(this.x, this.y + 33));
+	  }
+	}
 	//are we falling?
 	if (this.direction == -1){
-	  if (imageData[0] != 255 && imageData[1] != 255 && imageData[2] != 255 && imageData[2] > 200){
+	  if (imageData[0] != 255 && imageData[1] != 255 && imageData[2] != 255 && imageData[2] > 100 && imageData[3] == 255){
+	    console.log(imageData[0] + " " + imageData[1] + " " + imageData[2] + " " + imageData[3]);
 	    //Lemming hits the floor and continues its walk
 	    var canFloat = false;
 	    for (var j = 0 ; j < this.job.length ; j++){
 	      if (this.job[j] == "floater"){
-		canFloat = true;
-		break;  
+		canFloat = true; 
 	      }
 	    }
 	    if (this.speed > 2.8 && !canFloat)
 	      this.state = -1;
 	    this.direction = this.previousDirection;
 	  }
-	  // Coordinates update
-	  this.y += 0.0 + this.speed;
-	  this.speed+=0.02;
+	  else{
+	    // Coordinates update
+	    this.y += 0.0 + this.speed;
+	    this.speed+=0.02;
+	  }
 	}
 	//
-	else if (imageData[0] == 255 || imageData[1] == 255 || imageData[2] == 255){
+	else if ((imageData[0] == 255 || imageData[1] == 255 || imageData[2] == 255) && imageData[3] == 255 ){
 	  this.previousDirection = this.direction;  
 	  this.direction = -1;
 	}
-	else if (this.direction == 0){
+	else if (this.direction == 0 && !digging){
 	 this.x += 3;
 	 this.speed=0;
 	 if (this.x > canvas.width-32){
 	    this.direction = 1;
 	  }
 	}
-	else{
+	else if (!digging){
 	 this.x -= 3;
 	 this.speed = 0;
 	  if (this.x < 0)
 	    this.direction=0;
 	}
-	if (this.state != -1){
+	if (this.state != -1 && !digging){
 	  switch (this.direction){
 	    // Rendering...
 	    case 1: //right direction
@@ -119,17 +156,18 @@
 		  }
 		}
 	      }
-	      if (!floating)
+	      if (!floating){
 		ctx.drawImage(faller,(64) + 32 * ((this.frame) % 6) , 0 , 32, 32, this.x, this.y + 1, 32, 32);
+	      }
 	    break;
 	  }
 	}
-	else{
+	else if (!digging){
 	  ctx.drawImage(splat,(64) + 32 * ((this.frame) % 6) , 0 , 32, 32, this.x, this.y + 1, 32, 32);	
 	}
       }
     }
-    var door = { x: 300, y: 270 }
+    var door = { x: 300, y: 310 }
    
     /*** MOUSE CONTROL ***/
     canvas.onmousemove = function(e)
@@ -192,19 +230,62 @@
       ctx.drawImage(digger, 0, 0, 32,32, canvas.width - 32 * 9, 0, 32, 32);
       ctx.drawImage(floater, 0, 0, 32, 32, canvas.width - 32 * 10, 0, 32, 32);
       ctx.drawImage(superman, 0, 0, 32, 32, canvas.width - 32 * 11, 0, 32, 32);
-
+      
       ctx.fillStyle = 'rgb(1,1,1)';
-      for (var i = 0 ; i < 32 ; i++){
-	ctx.drawImage(imgSnowBlock, 23 * i, 100);
+      if (cursor.y < 32 && cursor.x > canvas.width - 32 * 11){
+	var rest = Math.round((canvas.width - cursor.x) / 32);
+	if (cursor.buttonLeft){
+	  switch (rest){
+	  case 1:
+	    //selectedCapacity = "digger";
+	  break;
+	  case 2:
+	    selectedCapacity = "digger";
+	  break;
+	  case 3:
+	    selectedCapacity = "blocker";
+	  break;
+	  case 4:
+	    selectedCapacity = "miner";
+	  break;
+	  case 6:
+	    selectedCapacity = "bridger";
+	  break;
+	  case 7:
+	    selectedCapacity = "bridger";
+	  break;
+	  case 8:
+	    selectedCapacity = "climber";
+	  break;
+	  case 9:
+	    selectedCapacity = "digger";
+	  break;
+	  case 10:
+	    selectedCapacity = "floater";
+	  break;
+	  }
+	}
+	ctx.strokeStyle = "rgba(199,0,0,0.9)";
+	ctx.strokeRect(canvas.width - rest * 32, 0,32,32);
+	ctx.stroke();
       }
-      for (var i = 0 ; 200 + i * 23 < canvas.width ; i++){
-	ctx.drawImage(imgSnowBlock,200 + 23 * i, 200);
+      for (var i = 0 ; i < 600 ; i+=90){
+	ctx.drawImage(imgSnowBlock, i, 100);
       }
-      for (var i = 0 ; i  < 600 ; i += 23){
+      for (var i = 0 ; 200 + i  < canvas.width ; i+=90){
+	ctx.drawImage(imgSnowBlock,200 + i, 200);
+      }
+      for (var i = 0 ; i  < 600 ; i += 90){
 	ctx.drawImage(imgSnowBlock, i, 400);
       }
+      for (var i = 0 ; i  < canvas.width ; i += 512){
+	ctx.drawImage(imgWater, i, canvas.height - 32);
+      }
       ctx.drawImage(doorImg,door.x,door.y);
-      
+      ctx.fillStyle = "rgba(255, 255, 255,1)";
+      for (var i = 0 ; i < elements.length ; i++){
+	ctx.fillRect(elements[i].x,elements[i].y - 3,32,4);
+      }
       // Now let's loop on the lemming list
       for (var i = 0 ; i < lemmings.length ; i++){
 	var lemming = lemmings[i];
@@ -215,47 +296,12 @@
 	//does the cursor is upon the mouse?
 	if (lemming.x < cursor.x && lemming.x + 32 > cursor.x 
 	    && lemming.y < cursor.y && lemming.y + 32 > cursor.y){
-	  ctx.strokeStyle = "rgb(199,0,0)";
-	  ctx.strokeRect(lemming.x, lemming.y,32,32);
+	  ctx.strokeStyle = "rgba(199,0,0,0.7)";
+	  ctx.strokeRect(lemming.x + 2, lemming.y + 2 , 28, 28);
 	  ctx.stroke();
 	  if (cursor.buttonLeft){
 		lemming.job.push(selectedCapacity);
 	  }
-	}
-	if (cursor.y < 32 && cursor.x > canvas.width - 32 * 11){
-	  var rest = Math.round((canvas.width - cursor.x) / 32);
-	  switch (rest){
-	  case 1:
-	    selectedCapacity = "digger";
-	  break;
-	  case 2:
-	    selectedCapacity = "blocker";
-	  break;
-	  case 3:
-	    selectedCapacity = "miner";
-	  break;
-	  case 4:
-	    //selectedCapacity = "";
-	  break;
-	  case 5:
-	    selectedCapacity = "bridger";
-	  break;
-	  case 6:
-	    selectedCapacity = "bridger";
-	  break;
-	  case 7:
-	    selectedCapacity = "climber";
-	  break;
-	  case 8:
-	    selectedCapacity = "digger";
-	  break;
-	  case 9:
-	    selectedCapacity = "floater";
-	  break;
-	  }
-	  ctx.strokeStyle = "rgb(199,0,0)";
-	  ctx.strokeRect(canvas.width - rest * 32, 0,32,32);
-	  ctx.stroke();
 	}
 	if ( f % 5 == 0 )
 	  lemming.frame+=1; //animation	
@@ -263,7 +309,7 @@
       }
       
       if (f%60==0){
-	if (lemmings.length < 10)
+	if (lemmings.length < 1)
 	  lemmings.push(new Lemming(0,50));
       }
     }
@@ -288,7 +334,7 @@
     function init() {
       ctx.canvas.width  = window.innerWidth;
       ctx.canvas.height  = window.innerHeight;
-      doorImg.src = 'src/th_SuperMario64Door.jpg';
+      doorImg.src = 'src/exitSnow.png';
       faller.src = "src/faller.png"
       imgSnowBlock.src = "src/snowBlock.png"
       walker.src = "src/walker.png"
@@ -311,6 +357,7 @@
       superman.src = "src/superman.png";
       tumble.src = "src/tumble.png";
       waiter.src = "src/waiter.png";
+      imgWater.src = "src/water.png";
     }
     init();
     run();
