@@ -2,6 +2,7 @@
   <head>
     <title>Pingus</title>
     <style type="text/css">body{ margin: 0px; padding: 0px; }</style>
+    <link href='http://fonts.googleapis.com/css?family=Mountains+of+Christmas' rel='stylesheet' type='text/css'>
   </head>
   <body onkeydown='keyIsDown(event)' onkeyup='keyIsUp(event)'>
   <canvas id="canvas"></canvas>
@@ -11,33 +12,36 @@
     var img = new Image();  
     var imgSnowBlock = new Image();
     var imgWater = new Image();
-    var walker= new Image();
-    var faller= new Image();
-    var floater = new Image();
-    var splat = new Image();
     var doorImg = new Image();
-    var slider = new Image();
-    var basher = new Image();
-    var blocker = new Image();
-    var boarder = new Image();
-    var bomber = new Image();
-    var bridger = new Image();
-    var bridger_walk = new Image();
-    var climber = new Image();
-    var digger = new Image();
-    var drownfall = new Image();
-    var drownwalk = new Image();
-    var exit = new Image();
-    var miner = new Image();
-    var slider = new Image();
-    var superman = new Image();
-    var tumble = new Image();
-    var waiter = new Image();
+    var game = { lemmingsSaved: 0 , lemmingsProduced : 0, lemmingsToProduced : 10 , lemmingsDead : 0};
+    var lemmingsImages = {
+      walker : new Image(),
+      faller : new Image(),
+      floater  : new Image(),
+      splat  : new Image(),
+      slider  : new Image(),
+      basher  : new Image(),
+      blocker  : new Image(),
+      boarder  : new Image(),
+      bomber  : new Image(),
+      bridger  : new Image(),
+      bridger_walk  : new Image(),
+      climber  : new Image(),
+      digger  : new Image(),
+      drownfall  : new Image(),
+      drownwalk  : new Image(),
+      exit  : new Image(),
+      miner  : new Image(),
+      superman  : new Image(),
+      tumble  : new Image(),
+      waiter  : new Image(),
+    };
 
     var selectedCapacity = "floater";
    /*** LISTS ***/
     var lemmings = [];
     var elements = [];
+    var tiles = [];
     /*** MAIN STRUCTURES (mouse, kb & main character) ***/
     var keyBoard = {};
     var cursor = {
@@ -67,21 +71,80 @@
       this.countFrame = 0;
       this.job = [];
       this.drown = false;
+      this.blocking = false;
+      this.exiting = false;
+      this.bomber = false;
+      this.miner = false;
       this.capacities = { build : 2 , floater: 2};
-	//============ walk or fall function =================
-      this.walkOrFall = function(){	
-	// Floor collision detection
+      //===========================================================
+      //====		 walk or fall function			===
+      //===========================================================
+      this.live = function(){	
+	//==========================
+	// behaviour management
+	//==========================
 	var imageData = ctx.getImageData(this.x + 15, this.y + 32 + ~~(this.speed), 1, 2).data;
 	var digging = false;
 
 	for (var i = 0 ; i < this.job.length ; i++){
 	  if (this.job[i] == "digger"){
 	    digging = true;
-	    break;
+	  }
+	  else if (this.job[i] == "blocker" && this.direction != -1){
+	    this.blocking = true;
+	  }
+	  else if (this.job[i] == "bridger" && this.direction != -1){
+	    this.bridger = true;
+	  }
+	  else if (this.job[i] == "bomber" && this.direction != -1){
+	    this.bomber = true;
+	  }
+	  else if (this.job[i] == "miner" && this.direction != -1){
+	    this.miner = true;
+	    console.log("miner");
 	  }
 	}
-
-	if (this.drown){
+	if (this.bomber){
+	}
+	else if (this.exiting){
+	}
+	else if (this.bridger){
+	  var tilePosition = !this.direction ? this.x + 30 : this.x - 6;
+	  tiles.push( new Element(tilePosition , this.y + 30));
+	  this.countFrame+=1;
+	  if (this.countFrame % 280 == 0 ){
+	    this.bridger = false;
+	    for (var i = 0; i < this.job.length ; i++){
+		if (this.job[i] == "bridger")
+		  this.job.splice(i,1);
+		i--;
+	    }
+	  }
+	}
+	else if (this.blocking){
+	}
+	else if (this.drown){
+	}
+	else if (this.miner){
+	  var imageDataMiner = ctx.getImageData(this.x +15, this.y + 33 , 1, 1).data;
+	  if ((imageDataMiner[0] == 255 || imageDataMiner[1] == 255 || imageDataMiner[2] == 255) && imageDataMiner[3] == 255){
+	    this.direction = this.previousDirection;
+	    for (var i = 0 ; i < this.job.length ; i++){
+	      if (this.job[i] == "miner"){
+		  this.job.splice(i,1);
+		  i--;
+	      }
+	    }
+	  }
+	  else{
+	    console.log("mf")
+	    if (this.frame % 12 == 0){
+	      this.y += 1;
+	      this.x += this.direction ? -2 : 2;
+	    }
+	    ctx.drawImage(lemmingsImages.miner,(64) + 32 * ((this.frame) % 6) , this.direction ? 0 : 32 , 32, 32, this.x, this.y + 1, 32, 32);
+	    elements.push(new Element(this.x + 33, this.y + 33));
+	  }
 	}
 	else if (digging){
 	  if ((imageData[8] == 255 || imageData[9] == 255 || imageData[10] == 255) && imageData[11] == 255){
@@ -96,12 +159,13 @@
 	  }
 	  else{
 	    this.y += 1;
-	    ctx.drawImage(digger,(64) + 32 * ((this.frame) % 6) , 0 , 32, 32, this.x, this.y + 1, 32, 32);
+	    ctx.drawImage(lemmingsImages.digger,(64) + 32 * ((this.frame) % 6) , 0 , 32, 32, this.x, this.y + 1, 32, 32);
 	    elements.push(new Element(this.x, this.y + 33));
 	  }
 	}
 	//are we falling?
-	if (!this.drown && this.direction == -1){
+	if (!this.blocking && !this.drown && !this.bridger && !this.exiting && !this.bomber && !this.miner && this.direction == -1){
+	  //we check if we hit the floor
 	  if (this.y < canvas.height - 69 && imageData[0] != 255 && imageData[1] != 255 && imageData[2] != 255 && imageData[2] > 100 && imageData[3] == 255){
 	    //Lemming hits the floor and continues its walk
 	    var canFloat = false;
@@ -110,7 +174,6 @@
 		canFloat = true; 
 	      }
 	    }
-	    console.log(imageData[2] );	
 	    if (this.speed > 2.8 && !canFloat)
 	      this.state = -1;
 	    this.direction = this.previousDirection;
@@ -123,34 +186,73 @@
 	      this.drown = true;
 	  }
 	}
-	//
-	else if ((imageData[0] == 255 || imageData[1] == 255 || imageData[2] == 255) && imageData[3] == 255 ){
+	//we check if the floor is still under
+	else if ((imageData[0] == 255 && imageData[1] == 255 && imageData[2] && 255) && imageData[3] == 255 && !this.bridger && !this.miner){
 	  this.previousDirection = this.direction;  
 	  this.direction = -1;
 	}
-	else if (this.direction == 0 && !digging && !this.drown){
-	 this.x += 3;
+	//going to the right
+	else if (this.direction == 0 && !digging && !this.drown && !this.blocking && !this.bridger && !this.miner){
+	 this.x += 2;
 	 this.speed=0;
 	 if (this.x > canvas.width-32){
 	    this.direction = 1;
 	  }
 	}
-	else if (!digging && !this.drown){
-	 this.x -= 3;
+	//to the left
+	else if (!digging && !this.drown && !this.blocking && !this.bridger && !this.miner){
+	 this.x -= 2;
 	 this.speed = 0;
 	  if (this.x < 0)
 	    this.direction=0;
 	}
 
+	//=======================================================
 	//Animations and coords update
-	if (this.state != -1 && !digging && !this.drown){
+	//=======================================================
+	if (this.bridger){
+	  ctx.drawImage(lemmingsImages.bridger,(64) + 32 * ((this.frame) % 6) , !this.direction ? 32 : 0 , 32, 32, this.x, this.y + 1, 32, 32);
+	  if (f % 6 == 0 && this.frame % 6 == 0){
+	    this.x += this.direction ? -10 : 10;
+	    this.y -= 2;
+	  }
+	}
+	else if (this.bomber){
+	   ctx.drawImage(lemmingsImages.bomber,(64) + 32 * ((this.frame) % 12) , 0 , 32, 32, this.x, this.y + 1, 32, 32);
+	}
+	else if (this.exiting){
+	  if (this.direction)
+	    ctx.drawImage(lemmingsImages.exit,(64) + 32 * ((this.frame) % 4) , 0 , 32, 32, this.x, this.y + 1, 32, 32);
+	  else
+	    ctx.drawImage(lemmingsImages.exit,(64) + 32 * ((this.frame) % 4) , 32 , 32, 32, this.x, this.y + 1, 32, 32);
+	}
+	else if (this.blocking){
+	  ctx.drawImage(lemmingsImages.blocker,(64) + 32 * ((this.frame) % 4) , 0 , 32, 32, this.x, this.y + 1, 32, 32);
+	}
+	else if (this.state != -1 && !digging && !this.drown && !this.miner){
+	  if (this.direction >= 0){
+	    for (var i = 0; i < lemmings.length ; i++){
+	      var lemming = lemmings[i];
+	      var mirror = this.direction ? 0 : 0;
+	      if (lemming.blocking == true && 
+		      this.x + mirror > lemming.x && this.x + mirror < lemming.x + 32 
+		      && this.y + mirror > lemming.y && this.y < lemming.y  + 31){
+		 this.direction = this.direction ? 0 : 1;
+	      }
+	    }
+	    var imgData = ctx.getImageData(this.x + (this.direction ? 32 : -2), this.y + 30, 2,2);
+	    if (imgData.data[0] == 2 && imgData.data[1] == 1 && imgData.data[2] == 2)
+	      this.y -= 2;
+	    ctx.putImageData(imgData,0,0);
+	  }
+	  //Ok so we're walking or falling
 	  switch (this.direction){
 	    // Rendering...
 	    case 1: //right direction
-	      ctx.drawImage(walker,(64) + 32 * ((this.frame) % 6) , 0 , 32, 32, this.x, this.y + 1, 32, 32);
+	      ctx.drawImage(lemmingsImages.walker,(64) + 32 * ((this.frame) % 6) , 0 , 32, 32, this.x, this.y + 1, 32, 32);
 	    break;
 	    case 0: //left direction
-	      ctx.drawImage(walker,(64) + 32 * ((this.frame) % 6) , 32, 32, 32, this.x, this.y + 1, 32, 32);
+	      ctx.drawImage(lemmingsImages.walker,(64) + 32 * ((this.frame) % 6) , 32, 32, 32, this.x, this.y + 1, 32, 32);
 	    break;
 	    default: //falling ( = -1 )
 	      var floating = false;
@@ -158,30 +260,35 @@
 		for (var i = 0 ; i < this.job.length ; i++){
 		  if (this.job[i] == "floater"){
 		    floating = true;
-		    ctx.drawImage(floater,(64) + 32 * ((this.frame) % 6) , 0 , 32, 32, this.x, this.y + 1, 32, 32);
+		    //Floating
+		    ctx.drawImage(lemmingsImages.floater,(64) + 32 * ((this.frame) % 6) , 0 , 32, 32, this.x, this.y + 1, 32, 32);
 		    break;
 		  }
 		}
 	      }
+	      //falling
 	      if (!floating){
-		ctx.drawImage(faller,(64) + 32 * ((this.frame) % 6) , 0 , 32, 32, this.x, this.y + 1, 32, 32);
+		ctx.drawImage(lemmingsImages.faller,(64) + 32 * ((this.frame) % 6) , 0 , 32, 32, this.x, this.y + 1, 32, 32);
 	      }
 	    break;
 	  }
 	}
-	else if (!digging && !this.drown){
-	  ctx.drawImage(splat,(64) + 32 * ((this.frame) % 6) , 0 , 32, 32, this.x, this.y + 1, 32, 32);	
+	//splat
+	else if (!digging && !this.drown && !this.miner){
+	  ctx.drawImage(lemmingsImages.splat,(64) + 32 * ((this.frame) % 6) , 0 , 32, 32, this.x, this.y + 1, 32, 32);	
 	}
-	else if (!digging && this.drown){
-	  ctx.drawImage(drownfall,(64) + 32 * ((this.frame) % 6) , 0 , 32, 32, this.x, this.y + 1, 32, 32);	
+	//gloups
+	else if (!digging && this.drown && !this.miner){
+	  ctx.drawImage(lemmingsImages.drownfall,(64) + 32 * ((this.frame) % 6) , 0 , 32, 32, this.x, this.y + 1, 32, 32);	
 	  this.y += 0.3;
 	  this.countFrame+=1;
 	  if (this.countFrame > 15)
 	  {
 	      this.state = -2;
-	      console.log("muf");
 	  }
 	}
+	if ( f % 7 == 0 )
+	  this.frame+=1; //animation	
       }
     }
     var door = { x: 300, y: 310 }
@@ -236,21 +343,22 @@
       //let's clear this
       ctx.fillStyle = 'rgb(255,255,255)';
       ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.drawImage(slider,0, 0, 32,32, canvas.width - 32, 0, 32, 32);
-      ctx.drawImage(basher, 0, 0, 32,32, canvas.width - 32 * 2, 0, 32, 32);
-      ctx.drawImage(blocker, 0, 0, 32,32, canvas.width - 32 * 3, 0, 32, 32);
-      ctx.drawImage(miner, 0, 0, 32,32, canvas.width - 32 * 4, 0, 32, 32);
-      ctx.drawImage(bomber, 0, 0, 32,32, canvas.width - 32 * 5, 0, 32, 32);
-      ctx.drawImage(bridger, 0, 0, 32,32, canvas.width - 32 * 6, 0, 32, 32);
-      ctx.drawImage(bridger_walk, 0, 0, 32,32, canvas.width - 32 * 7, 0, 32, 32);
-      ctx.drawImage(climber, 0, 0, 32,32, canvas.width - 32 * 8, 0, 32, 32);
-      ctx.drawImage(digger, 0, 0, 32,32, canvas.width - 32 * 9, 0, 32, 32);
-      ctx.drawImage(floater, 0, 0, 32, 32, canvas.width - 32 * 10, 0, 32, 32);
-      ctx.drawImage(superman, 0, 0, 32, 32, canvas.width - 32 * 11, 0, 32, 32);
+      ctx.drawImage(lemmingsImages.slider,0, 0, 32,32, canvas.width - 32, 0, 32, 32);
+      ctx.drawImage(lemmingsImages.basher, 0, 0, 32,32, canvas.width - 32 * 2, 0, 32, 32);
+      ctx.drawImage(lemmingsImages.blocker, 0, 0, 32,32, canvas.width - 32 * 3, 0, 32, 32);
+      ctx.drawImage(lemmingsImages.miner, 0, 0, 32,32, canvas.width - 32 * 4, 0, 32, 32);
+      ctx.drawImage(lemmingsImages.bomber, 384, 0, 32,32, canvas.width - 32 * 5, 0, 32, 32);
+      ctx.drawImage(lemmingsImages.bridger, 0, 0, 32,32, canvas.width - 32 * 6, 0, 32, 32);
+      ctx.drawImage(lemmingsImages.climber, 0, 0, 32,32, canvas.width - 32 * 7, 0, 32, 32);
+      ctx.drawImage(lemmingsImages.digger, 0, 0, 32,32, canvas.width - 32 * 8, 0, 32, 32);
+      ctx.drawImage(lemmingsImages.floater, 0, 0, 32, 32, canvas.width - 32 * 9, 0, 32, 32);
+      ctx.drawImage(lemmingsImages.superman, 0, 0, 32, 32, canvas.width - 32 * 10, 0, 32, 32);
+      
       ctx.fillStyle = 'rgb(1,1,1)';
-      if (cursor.y < 32 && cursor.x > canvas.width - 32 * 11){
-	var rest = Math.round((canvas.width - cursor.x) / 32);
+      if (cursor.y < 32 && cursor.x > canvas.width - 32 * 9){
+	var rest = Math.round((canvas.width - cursor.x) / 32) ;
 	if (cursor.buttonLeft){
+	  console.log("rest:"+rest);
 	  switch (rest){
 	  case 1:
 	  break;
@@ -263,19 +371,19 @@
 	  case 4:
 	    selectedCapacity = "miner";
 	  break;
+	  case 5:
+	    selectedCapacity = "bomber";
+	  break;
 	  case 6:
 	    selectedCapacity = "bridger";
 	  break;
 	  case 7:
-	    selectedCapacity = "bridger";
-	  break;
-	  case 8:
 	    selectedCapacity = "climber";
 	  break;
-	  case 9:
+	  case 8:
 	    selectedCapacity = "digger";
 	  break;
-	  case 10:
+	  case 9:
 	    selectedCapacity = "floater";
 	  break;
 	  }
@@ -301,14 +409,31 @@
       for (var i = 0 ; i < elements.length ; i++){
 	ctx.fillRect(elements[i].x,elements[i].y - 3,32,4);
       }
+      ctx.fillStyle = "rgba(2,1,2,1)";
+      for (var i = 0 ; i < tiles.length ; i++){
+	ctx.fillRect(tiles[i].x,tiles[i].y , 15, 6);
+      }
+      
       // Now let's loop on the lemming list
       for (var i = 0 ; i < lemmings.length ; i++){
 	var lemming = lemmings[i];
 	//is he in front of the door???
-	if (lemming.x > 350 && lemming.x < 390 && lemming.y > 270 && lemming.y < 380){
-	  console.log("youpee" + lemming.job) ;
+	if (lemming.x > 310 && lemming.x < 350 && lemming.y > 270 && lemming.y < 380){
+	  lemming.exiting = true;
+	  lemming.countFrame++;
+	  if (lemming.countFrame == 6){
+	    lemmings.splice(i,1);
+	    game.lemmingsSaved++;
+	    console.log("You saved " + game.lemmingsSaved + " litlle pingus!");
+	  }
 	}
-	  
+	else if (lemming.bomber){
+	  lemming.countFrame++;
+	  if (lemming.countFrame == 12){
+	    lemmings.splice(i,1);
+	    game.lemmingsDead++;
+	  }
+	}
 	//does the cursor is upon the mouse?
 	if (lemming.x < cursor.x && lemming.x + 32 > cursor.x 
 	    && lemming.y < cursor.y && lemming.y + 32 > cursor.y){
@@ -319,16 +444,27 @@
 		lemming.job.push(selectedCapacity);
 	  }
 	}
-	if ( f % 5 == 0 )
-	  lemming.frame+=1; //animation	
-	lemming.walkOrFall();
+	lemming.live();
 	if (lemming.state == -2){
 	  lemmings.splice(i,1);
-	  console.log("mufmuf");
 	}
       }
-      if (lemmings.length < 50 && f % 60 == 0){
+      if (game.lemmingsProduced < game.lemmingsToProduced && f % 40 == 0){
 	  lemmings.push(new Lemming(0,50));
+	  game.lemmingsProduced++;
+      }
+      ctx.font = "bold 22px 'Mountains of Christmas'";
+      ctx.fillText("Pingus: "+game.lemmingsProduced+"/"+game.lemmingsToProduced,canvas.width - 150,60);
+      ctx.fillText("Saved pingus: "+game.lemmingsSaved,canvas.width - 150,85);
+      ctx.fillText("Lost pingus: "+game.lemmingsDead,canvas.width - 150,110);
+      if (game.lemmingsSaved + game.lemmingsDead == game.lemmingsToProduced){
+	ctx.font = "bold 35px 'Mountains of Christmas'";
+	ctx.fillStyle = "rgb(255,255,255)";
+	ctx.fillRect(canvas.width / 2 - 50, canvas.height / 2 - 15);
+	ctx.fillStyle = "rgb(255,0,0)";
+	ctx.fillText("Game over",canvas.width / 2 - 30,canvas.height / 2 - 30);
+	ctx.fillText("Lemmings saved:" + game.lemmingsSaved + "/" + game.lemmingsToProduced,canvas.width / 2 - 60,canvas.height / 2 + 13);
+      
       }
     }
     window.requestAnimFrame = 	( 
@@ -353,29 +489,29 @@
       ctx.canvas.width  = window.innerWidth;
       ctx.canvas.height  = window.innerHeight;
       doorImg.src = 'src/exitSnow.png';
-      faller.src = "src/faller.png"
-      imgSnowBlock.src = "src/snowBlock.png"
-      walker.src = "src/walker.png"
-      splat.src = "src/splat.png";
-      floater.src = "src/floater.png";
-      slider.src = "src/slider.png";
-      basher.src = "src/basher.png";
-      blocker.src = "src/blocker.png";
-      boarder.src = "src/boarder.png";
-      bomber.src = "src/bomber.png";
-      bridger.src = "src/bridger.png";
-      bridger_walk.src = "src/bridger_walk.png";
-      climber.src = "src/climber.png";
-      digger.src = "src/digger.png";
-      drownfall.src = "src/drownfall.png";
-      drownwalk.src = "src/drownwalk.png";
-      exit.src = "src/exit.png";
-      miner.src = "src/miner.png";
-      slider.src = "src/slider.png";
-      superman.src = "src/superman.png";
-      tumble.src = "src/tumble.png";
-      waiter.src = "src/waiter.png";
       imgWater.src = "src/water.png";
+      imgSnowBlock.src = "src/snowBlock.png"
+      lemmingsImages.walker.src = "src/walker.png"
+      lemmingsImages.faller.src = "src/faller.png"
+      lemmingsImages.splat.src = "src/splat.png";
+      lemmingsImages.floater.src = "src/floater.png";
+      lemmingsImages.slider.src = "src/slider.png";
+      lemmingsImages.basher.src = "src/basher.png";
+      lemmingsImages.blocker.src = "src/blocker.png";
+      lemmingsImages.boarder.src = "src/boarder.png";
+      lemmingsImages.bomber.src = "src/bomber.png";
+      lemmingsImages.bridger.src = "src/bridger.png";
+      lemmingsImages.bridger_walk.src = "src/bridger_walk.png";
+      lemmingsImages.climber.src = "src/climber.png";
+      lemmingsImages.digger.src = "src/digger.png";
+      lemmingsImages.drownfall.src = "src/drownfall.png";
+      lemmingsImages.drownwalk.src = "src/drownwalk.png";
+      lemmingsImages.exit.src = "src/exit.png";
+      lemmingsImages.miner.src = "src/miner.png";
+      lemmingsImages.slider.src = "src/slider.png";
+      lemmingsImages.superman.src = "src/superman.png";
+      lemmingsImages.tumble.src = "src/tumble.png";
+      lemmingsImages.waiter.src = "src/waiter.png";
     }
     init();
     run();
