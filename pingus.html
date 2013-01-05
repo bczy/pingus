@@ -1,19 +1,17 @@
+
 <html>
   <head>
     <title>Pingus</title>
     <style type="text/css">body{ margin: 0px; padding: 0px; }</style>
     <link href='http://fonts.googleapis.com/css?family=Mountains+of+Christmas' rel='stylesheet' type='text/css'>
   </head>
-  <body onkeydown='keyIsDown(event)' onkeyup='keyIsUp(event)'>
+  <body style="background-image:url('src/background.jpg')">
   <canvas id="canvas"></canvas>
   <script>
     var ctx = document.getElementById('canvas').getContext('2d');
     var f=1;
-    var img = new Image();  
-    var imgSnowBlock = new Image();
-    var imgWater = new Image();
-    var doorImg = new Image();
-    var game = { lemmingsSaved: 0 , lemmingsProduced : 0, lemmingsToProduced : 10 , lemmingsDead : 0};
+    var selectedCapacity = "";
+    var game = { lemmingsSaved: 0 , lemmingsProduced : 0, lemmingsToProduced : 1, lemmingsDead : 0};
     var lemmingsImages = {
       walker : new Image(),
       faller : new Image(),
@@ -36,8 +34,8 @@
       tumble  : new Image(),
       waiter  : new Image(),
     };
-
-    var selectedCapacity = "floater";
+    var img = new Image() , imgSnowBlock = new Image(), imgWater = new Image(), doorImg = new Image();
+    
    /*** LISTS ***/
     var lemmings = [];
     var elements = [];
@@ -83,9 +81,8 @@
 	//==========================
 	// behaviour management
 	//==========================
-	var imageData = ctx.getImageData(this.x + 15, this.y + 32 + ~~(this.speed), 1, 2).data;
+	var imageData = ctx.getImageData(this.x + 15, this.y + 32 + ~~(this.speed), 1, 1).data;
 	var digging = false;
-
 	for (var i = 0 ; i < this.job.length ; i++){
 	  if (this.job[i] == "digger"){
 	    digging = true;
@@ -101,7 +98,6 @@
 	  }
 	  else if (this.job[i] == "miner" && this.direction != -1){
 	    this.miner = true;
-	    console.log("miner");
 	  }
 	}
 	if (this.bomber){
@@ -137,7 +133,6 @@
 	    }
 	  }
 	  else{
-	    console.log("mf")
 	    if (this.frame % 12 == 0){
 	      this.y += 1;
 	      this.x += this.direction ? -2 : 2;
@@ -147,7 +142,7 @@
 	  }
 	}
 	else if (digging){
-	  if ((imageData[8] == 255 || imageData[9] == 255 || imageData[10] == 255) && imageData[11] == 255){
+	  if (imageData[8] + imageData[9] + imageData[10] == 0){
 	    digging = false;
 	    this.direction = -1;
 	    for (var i = 0 ; i < this.job.length ; i++){
@@ -164,9 +159,9 @@
 	  }
 	}
 	//are we falling?
-	if (!this.blocking && !this.drown && !this.bridger && !this.exiting && !this.bomber && !this.miner && this.direction == -1){
+	if (this.direction == -1 && !this.blocking && !this.drown && !this.bridger && !this.exiting && !this.bomber && !this.miner ){
 	  //we check if we hit the floor
-	  if (this.y < canvas.height - 69 && imageData[0] != 255 && imageData[1] != 255 && imageData[2] != 255 && imageData[2] > 100 && imageData[3] == 255){
+	  if (this.y < canvas.height - 69 && imageData[0] + imageData[1] + imageData[2] > 600){
 	    //Lemming hits the floor and continues its walk
 	    var canFloat = false;
 	    for (var j = 0 ; j < this.job.length ; j++){
@@ -177,6 +172,7 @@
 	    if (this.speed > 2.8 && !canFloat)
 	      this.state = -1;
 	    this.direction = this.previousDirection;
+	    this.y += 1;
 	  }
 	  else{
 	    // Coordinates update
@@ -187,7 +183,7 @@
 	  }
 	}
 	//we check if the floor is still under
-	else if ((imageData[0] == 255 && imageData[1] == 255 && imageData[2] && 255) && imageData[3] == 255 && !this.bridger && !this.miner){
+	else if ((imageData[0] + imageData[1] + imageData[2] < 600) && !this.bridger && !this.miner){
 	  this.previousDirection = this.direction;  
 	  this.direction = -1;
 	}
@@ -342,8 +338,7 @@
     function update(){
       //let's clear this
       ctx.fillStyle = 'rgb(255,255,255)';
-      ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.drawImage(lemmingsImages.slider,0, 0, 32,32, canvas.width - 32, 0, 32, 32);
+      ctx.clearRect(0,0,canvas.width,canvas.height);
       ctx.drawImage(lemmingsImages.basher, 0, 0, 32,32, canvas.width - 32 * 2, 0, 32, 32);
       ctx.drawImage(lemmingsImages.blocker, 0, 0, 32,32, canvas.width - 32 * 3, 0, 32, 32);
       ctx.drawImage(lemmingsImages.miner, 0, 0, 32,32, canvas.width - 32 * 4, 0, 32, 32);
@@ -352,13 +347,11 @@
       ctx.drawImage(lemmingsImages.climber, 0, 0, 32,32, canvas.width - 32 * 7, 0, 32, 32);
       ctx.drawImage(lemmingsImages.digger, 0, 0, 32,32, canvas.width - 32 * 8, 0, 32, 32);
       ctx.drawImage(lemmingsImages.floater, 0, 0, 32, 32, canvas.width - 32 * 9, 0, 32, 32);
-      ctx.drawImage(lemmingsImages.superman, 0, 0, 32, 32, canvas.width - 32 * 10, 0, 32, 32);
       
       ctx.fillStyle = 'rgb(1,1,1)';
       if (cursor.y < 32 && cursor.x > canvas.width - 32 * 9){
 	var rest = Math.round((canvas.width - cursor.x) / 32) ;
 	if (cursor.buttonLeft){
-	  console.log("rest:"+rest);
 	  switch (rest){
 	  case 1:
 	  break;
@@ -407,7 +400,7 @@
       ctx.drawImage(doorImg,door.x,door.y);
       ctx.fillStyle = "rgba(255, 255, 255,1)";
       for (var i = 0 ; i < elements.length ; i++){
-	ctx.fillRect(elements[i].x,elements[i].y - 3,32,4);
+	ctx.clearRect(elements[i].x,elements[i].y - 3,32,4);
       }
       ctx.fillStyle = "rgba(2,1,2,1)";
       for (var i = 0 ; i < tiles.length ; i++){
@@ -424,7 +417,6 @@
 	  if (lemming.countFrame == 6){
 	    lemmings.splice(i,1);
 	    game.lemmingsSaved++;
-	    console.log("You saved " + game.lemmingsSaved + " litlle pingus!");
 	  }
 	}
 	else if (lemming.bomber){
@@ -475,7 +467,7 @@
 	window.oRequestAnimationFrame      || 
 	window.msRequestAnimationFrame     || 	
 	function(callback, element){
-	  window.setTimeout(callback, 1000 / 60);
+	  window.setTimeout(callback, 1000 / 300);
 	};
       }
     )();
