@@ -9,7 +9,7 @@ gameloop
 * pingus lifecycle
 * pingus list update according to list elements status
 * input updates
-  
+
 pingus lifecycle
 ===========
 * current jobs & capacities (miner, bridger, floater, etc...) update
