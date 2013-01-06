@@ -1,0 +1,18 @@
+WIP...
+===========
+
+gameloop
+===========
+* controls update
+* state machine (cf. todo)
+* draw level platforms, tiles & holes
+* pingus lifecycle
+* pingus list update according to list elements status
+* input updates
+  
+pingus lifecycle
+===========
+* current jobs & capacities (miner, bridger, floater, etc...) update
+* do the job (make tiles for miner, bridger and digger)
+* coords update & animation
+* status update (falling, splashing, diving?)
