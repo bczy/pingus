@@ -1,5 +1,8 @@
 HTML5 pingus, Linux HTML5 port attempt
-WIP...
+WIP...BUGGY DRAFT VERSION
+===========
+
+demo: http://etribz.fr/workshop/pingus/pingus.html
 ===========
 
 gameloop
@@ -25,7 +28,7 @@ NB2: pixels colors are used to detect collision
 TODO
 ===========
 * THE layout thing
-* pixel ratio
+* pixel ratio (CSS3?)
 * level loader
 * state machine (pause, start)
 * touch control
