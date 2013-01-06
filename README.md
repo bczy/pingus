@@ -24,12 +24,11 @@ NB2: pixels colors are used to detect collision
 
 TODO
 ===========
+* THE layout thing
 * pixel ratio
-* background display
 * level loader
 * state machine (pause, start)
 * touch control
-
 
 BUGS
 ===========
