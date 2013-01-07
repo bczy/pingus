@@ -4,7 +4,7 @@ HTML5 pingus, Linux HTML5 port attempt
 (WIP)...Broken draft version
 ===========
 
-demo: http://etribz.fr/workshop/pingus/pingus.html
+Working demo: http://etribz.fr/workshop/pingus/pingus.html
 ===========
 
 gameloop
